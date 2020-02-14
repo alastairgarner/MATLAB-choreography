@@ -1,0 +1,22 @@
+choreography_config:
+  features: ['curve','midline','speed','crabspeed','x','y','area']
+  pval: 0.088
+  choreLoc: ./packages/choreography/Chore.jar
+  M: 1
+  t: 5
+  s: 0.1
+  runQuiet: true
+directories: 
+  master: /home/alastair/OneDrive/projects/vanMeyel_pipeline
+  raw_data: 
+  choreography_results: /home/alastair/Downloads/For_Jane/For_Jane/chore_res
+  choreography_inputs: /home/alastair/Downloads/For_Jane/For_Jane/blobs
+  code: ./matlab
+  figures: ./data/figures
+filetypes:
+  blobs: .blob*
+  chore_txt: compiledChore.txt
+  chore_dat: .dat
+  salam: animal_stats*.txt
+  jaaba: [trx.mat, scores*short.mat]
+  jb: trx.mat
