@@ -13,12 +13,11 @@
 
 function initialise_directories()
 
-%
+addpath('./code')
+
 parameterFile = 'default_config.yaml'; 
 paramFile = dir(fullfile('.','**',[parameterFile,'*']));
 params = yaml.ReadYaml(fullfile(paramFile.folder,paramFile.name));
-cd(params.directories.master)
-addpath(params.directories.code)
 
 % initialise_folders
 temp = rmfield(params.directories,'master');
