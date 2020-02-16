@@ -9,7 +9,7 @@ choreography_config:
   runQuiet: true
 
 directories: 
-  master: /home/alastair/OneDrive/projects/vanMeyel_pipeline
+  master: .
   mwt: ./data/mwt_data
   choreography_output: ./data/chore_output
   choreography_input: ./data/chore_input

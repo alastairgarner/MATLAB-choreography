@@ -6,7 +6,7 @@ t: 5
 s: 0.1
 runQuiet: true
 directories: 
-  master: /home/alastair/OneDrive/projects/vanMeyel_pipeline
+  master: .
   choreography_results: ./choreography_results
   choreography_inputs: ./choreography_inputs
   code: ./matlab
