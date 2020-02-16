@@ -12,9 +12,9 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-clear all; clc;
+configfile = 'AZ_config';
 
-params = load_config('default_config.yaml');
+params = load_config(configfile);
 
 % Fix and copy across raw data to chore_input
 if ~isempty(params.directories.mwt)

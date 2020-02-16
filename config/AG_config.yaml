@@ -5,14 +5,17 @@ choreography_config:
   M: 1
   t: 5
   s: 0.1
+  rig: t93
   runQuiet: true
+
 directories: 
   master: /home/alastair/OneDrive/projects/vanMeyel_pipeline
-  raw_data: 
-  choreography_results: /home/alastair/Downloads/For_Jane/For_Jane/chore_res
-  choreography_inputs: /home/alastair/Downloads/For_Jane/For_Jane/blobs
-  code: ./matlab
-  figures: ./data/figures
+  mwt: ./data/mwt_data
+  choreography_output: ./data/chore_output
+  choreography_input: ./data/chore_input
+  code: ./code
+  figures: ./figures
+
 filetypes:
   blobs: .blob*
   chore_txt: compiledChore.txt

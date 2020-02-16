@@ -1,18 +1,21 @@
 choreography_config:
-  features: ['speed','crabspeed','area','x','y']
+  features: ['speed','area','x','y']
   pval: 0.0528
   choreLoc: ./packages/choreography/Chore.jar
   M: 0.18
   t: 5
   s: 0.1
+  rig: t93
   runQuiet: true
+
 directories: 
   master: /home/alastair/OneDrive/projects/vanMeyel_pipeline
-  raw_data: ./raw_input
-  choreography_results: ./choreography_results
-  choreography_inputs: ./choreography_input
-  code: ./matlab
+  mwt: ./data/mwt_data
+  choreography_output: ./data/chore_output
+  choreography_input: ./data/chore_input
+  code: ./code
   figures: ./figures
+
 filetypes:
   blobs: .blob*
   chore_txt: compiledChore.txt
