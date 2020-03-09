@@ -345,10 +345,9 @@ classdef choreHandler
 
             dists = arrayfun(@(x) [x.data_choreography([x.data_choreography.animal_filter]).(metric_to_plot)], obj,'UniformOutput', false);
             groups = arrayfun(@(x) [x.data_choreography([x.data_choreography.animal_filter]).group], obj,'UniformOutput', false);
-            objectID = arrayfun(@(x) [x.data_choreography([x.data_choreography.animal_filter]).aniID], obj,'UniformOutput', false);
+            objectNumber = arrayfun(@(x) [x.data_choreography([x.data_choreography.animal_filter]).group], obj,'UniformOutput', false);
             dists = [dists{:}];
             groups = [groups{:}];
-            objectID = [objectID{:}];
             [unique_groups,~,alt_groups] = unique(groups,'stable');
             genos = genos(unique_groups);
             if max(groups) > length(unique_groups)
@@ -385,7 +384,7 @@ classdef choreHandler
             
             % generate table to print
             genotypes = obj.get_full_genotype();
-            printArray = [cellstr(genotypes(groups));num2cell(groups);num2cell(objectID);num2cell(dists)]';
+            printArray = [cellstr(genotypes(groups));num2cell(groups);num2cell(dists)]';
             
             box_handle = h;
             spread_handle = p;

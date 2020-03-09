@@ -114,7 +114,13 @@ for ii = 1:length(metrics)
     [printArray,bh,sh] = data.plot_boxplot(metrics{ii},labels{ii},params);
     fig_name = fullfile(fig_dir,metrics{ii});
     save_figure(gcf,fig_name,save_type);
-    save_data_csv(printArray,fig_name);
+    
+    printArray = printArray';
+    fid = fopen(strcat(fig_name,'.csv'),'w');
+    fprintf(fid,'%s,%f,%f\n',{'genotype','',''});
+    fprintf(fid,'%s,%f,%f\n',printArray{:});
+    fclose(fid)
+    
     close
 end
 
