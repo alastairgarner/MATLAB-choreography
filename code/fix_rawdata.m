@@ -14,6 +14,10 @@ outFiles = dir(fullfile(OutputDirectory,'**',fileType));
 
 %% check for new files
 
+if ~numel(inpFiles)
+    return
+end
+
 if length(outFiles) ~= 0
     expr = '\d\d\d\d\d\d\d\d_\d\d\d\d\d\d';
     inpStamps = regexp([inpFiles.folder],expr,'match');

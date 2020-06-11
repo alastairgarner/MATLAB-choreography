@@ -19,4 +19,4 @@ params = load_config(configfile);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % run plot function
-generate_plots(params,'FigureType','svg','PlotOrder','default','FixedDuration', 30)
+generate_plots(params,'FigureType','pdf','PlotOrder','default','FixedDuration', 30)

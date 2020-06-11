@@ -34,8 +34,10 @@ currentDir = pwd;
 
 %% list of features
 
-featName = {'x','y','speed','midline','curve','crabspeed','area'};
-featCode = {'x','y','s','m','c','r','e'};
+featName = {'x','y','speed','midline','curve','crabspeed',...
+    'area','morpwidth','kink','cast','bias','dir'};
+featCode = {'x','y','s','m','c','r',...
+    'e','M','k','c','b','d'};
 
 [C ia ic] = intersect(featName,features,'stable');
 [Lia Locb] = ismember(features,featName);
@@ -60,7 +62,7 @@ n = 1;
 for ii = Locb
     if contains(featCode(ii),{'s','x','y','e'})
         cmd{n} = [java_call ' "' choreLoc '" -t ' num2str(t) ' -s ' num2str(s) ' -M ' num2str(M) ' -q --quiet -p ' num2str(pval) ' -S --nanless -o Dt' featCode{ii} '1234 -O ' featName{ii} ' -N all --target '];
-    elseif contains(featCode(ii),{'r','c','m'})
+    elseif contains(featCode(ii),{'r','c','m','M','k','b','d'})
         cmd{n} = [java_call ' "' choreLoc '" -t ' num2str(t) ' -s ' num2str(s) ' -M ' num2str(M) ' -q --quiet -p ' num2str(pval) ' --plugin Reoutline::exp --plugin Respine::0.23::tapered=0.28,1,2 --plugin SpinesForward::rebias --minimum-biased 3mm -S --nanless -o Dt' featCode{ii} '1234 -O ' featName{ii} ' -N all --target '];
     elseif contains(featCode(ii),{'S'})
         cmd{n} = [java_call ' "' choreLoc '" -t ' num2str(t) ' -s ' num2str(s) ' -M ' num2str(M) ' -q --quiet -p ' num2str(pval) ' --plugin Reoutline::exp --plugin Respine::0.23::tapered=0.28,1,2 --plugin SpinesForward::rebias --minimum-biased 3mm -S --nanless --plugin Extract::spine --target '];
@@ -108,7 +110,7 @@ if length(outFiles) ~= 0
         fprintf('\n All files have already been run \n')
         return
     end
-    inpStamps = regexp([inpFiles.name],expr,'match');
+    inpStamps = regexp({inpFiles.name},expr,'match','once');
 end
 
 %%%%%%%%%%%%%%%%%%%%%%
@@ -134,7 +136,26 @@ end
 %     inpStamps = regexp([inpFiles.name],expr,'match');
 % 
 % end
+%%
+
+% filterByDriver = false;
+% if filterByDriver
+%     fid = fopen('screen_genotypes.txt');
+%     myGenotypes = textscan(fid,'%s\n');
+%     myGenotypes = string([myGenotypes{:}]);
+%     fclose(fid);
+%     
+%     expr = '\d{8}_\d{6}@([a-zA-Z_0-9]+)@*';
+%     driver = regexp({inpFiles.name},expr,'tokens','once');
+%     driver = string(driver)';
+% 
+%     genoFilter = ismember(driver,myGenotypes);
+%     inpFiles = inpFiles(genoFilter);
+% end
+
 %% run choreography
+
+% 20170928_111031
 
 delimiter = ' ';
 startRow = 0;
@@ -143,11 +164,24 @@ formatSpec = '%f%f%f%f%f%f%f%[^\n\r]';
 folderList = struct();
 folderList = {inpFiles.folder}';
 
-
 for ii = 1:length(folderList)
     sp = split(inpFiles(ii).name,'@');
-    inputFold = inpFiles(ii).folder;
-    outputFold = fullfile(outFold,[sp{2},'@', sp{3}],sp{[5,1]});
+    
+    if ~startsWith(inpFiles(ii).folder,'/media')
+        isExternal = false;
+        inputFold = inpFiles(ii).folder;
+        outputFold = fullfile(outFold,[sp{2},'@', sp{3}],sp{[5,1]});
+    else
+        isExternal = true;
+        if isdir('./_temp')
+            rmdir('./_temp','s');
+        end
+        inputFold = './_temp/chore_input';
+        mkdir(inputFold);
+        copyfile(inpFiles(ii).folder,inputFold);
+        outputFold = fullfile('./_temp',[sp{2},'@', sp{3}],sp{[5,1]});
+        copyDest = fullfile(outFold,[sp{2},'@', sp{3}],sp{[5,1]});
+    end
     
     fullLine = {};
     for jj = 1:length(cmd)
@@ -206,7 +240,17 @@ for ii = 1:length(folderList)
     
     cd(currentDir)
     
+    if isExternal
+        if isdir(copyDest)
+            rmdir(copyDest,'s');
+        end
+        mkdir(copyDest);
+        copyfile(outputFold,copyDest)
+    end
+    
     fprintf(['Choreography complete for timestamp ' sp{1} '\n']);
 end
 
-
+try
+    rmdir('./_temp','s');
+end

@@ -132,14 +132,14 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Path Figures
 
-for ii = 1:numel(data)
-    data(ii).plot_ridgeline()
-    
-    geno = strcat(data(ii).driver,"@",data(ii).effector,"@ridge_speed");
-    fig_name = fullfile(fig_dir,geno);
-    save_figure(gcf,fig_name,save_type);
-    close
-end
+% for ii = 1:numel(data)
+%     data(ii).plot_ridgeline()
+%     
+%     geno = strcat(data(ii).driver,"@",data(ii).effector,"@ridge_speed");
+%     fig_name = fullfile(fig_dir,geno);
+%     save_figure(gcf,fig_name,save_type);
+%     close
+% end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

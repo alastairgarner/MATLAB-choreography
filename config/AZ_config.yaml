@@ -2,7 +2,7 @@ choreography_config:
   features: ['speed','area','x','y']
   pval: 0.0528
   choreLoc: ./packages/choreography/Chore.jar
-  M: 0.18
+  M: 1
   t: 5
   s: 0.1
   rig: t93

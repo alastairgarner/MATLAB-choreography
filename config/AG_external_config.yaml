@@ -1,0 +1,26 @@
+choreography_config:
+  features: ['curve','midline','speed','crabspeed','x','y','area','kink','cast','bias','dir','morpwidth']
+  pval: 0.088
+  choreLoc: ./packages/choreography/Chore.jar
+  M: 1
+  t: 5
+  s: 0.1
+  rig: t93
+  runQuiet: true
+  otherFeatures: ['curve','midline','speed','crabspeed','x','y','area']
+
+directories: 
+  master: .
+  mwt: /media/alastair/Alastair_EH/LED05_45/mwt_data
+  choreography_output: /media/alastair/Alastair_EH/LED05_45/chore_output
+  choreography_input: /media/alastair/Alastair_EH/LED05_45/chore_input
+  code: ./code
+  figures: ./figures
+
+filetypes:
+  blobs: .blob*
+  chore_txt: compiledChore.txt
+  chore_dat: .dat
+  salam: animal_stats*.txt
+  jaaba: [trx.mat, scores*short.mat]
+  jb: trx.mat
