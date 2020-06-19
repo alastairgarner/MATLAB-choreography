@@ -1,5 +1,5 @@
 choreography_config:
-  features: ['speed','area','x','y']
+  features: ['speed','area','x','y','curve']
   pval: 0.0528
   choreLoc: ./packages/choreography/Chore.jar
   M: 0.18
@@ -23,13 +23,3 @@ filetypes:
   salam: animal_stats*.txt
   jaaba: [trx.mat, scores*short.mat]
   jb: trx.mat
-
-choreography_calls:
-  speed: 
-  crabspeed: 
-  curve: 
-  midline: 
-  xy: 
-  area: 
-  spine: 
-  outline: 

@@ -20,6 +20,9 @@ function generate_plots(params,varargin)
 %  - plot order (default, custom)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Debug settings
+% varargin = {'FigureType','pdf','PlotOrder','default','FixedDuration', 30, 'RidgeLimits', []};
+
 % Parse Function Inputs
 
 defaultWindow = 21;
@@ -43,6 +46,7 @@ addOptional(p,'FilterWindow',defaultFilterWindow,checkFilterWindow);
 addOptional(p,'SmoothWindowWidth',defaultWindow);
 addOptional(p,'FigureType',defaultFigType,checkFigType);
 addOptional(p,'FixedDuration',defaultFixedDuration);
+addOptional(p,'RidgeLimits',[])
 
 parse(p,varargin{:})
 
@@ -101,14 +105,16 @@ metrics = {"path_distance_smooth",...
     "mean_speed_smooth",...
     "mean_speed_crude",...
     "vect_distance",...
-    "path_distance_byarea"};
+    "path_distance_byarea",...
+    "mean_curve_smooth"};
 
 labels = {"Path length (mm) - Smoothened",...
     "Path length (mm) - Raw",...
     "Average speed (mm/s) - Smooth",...
     "Average speed (mm/s) - Raw",...
     "Distance from Origin (mm)",...
-    "Path length (mm) - By area"};
+    "Path length (mm) - By area",...
+    "Average curve (degrees)"};
 
 for ii = 1:length(metrics)
     [printArray,bh,sh] = data.plot_boxplot(metrics{ii},labels{ii},params);
@@ -119,28 +125,43 @@ for ii = 1:length(metrics)
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Path Figures
+%%% Path Figures
 
-gridsize = 3;
-for ii = 1:numel(data)
-    fh = data(ii).plot_paths(gridsize);
-    fig_name = fullfile(fig_dir,strcat(data(ii).driver,"@",data(ii).effector,'@path'));
-    save_figure(gcf,fig_name,save_type);
-    close
-end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Path Figures
-
+% gridsize = 3;
 % for ii = 1:numel(data)
-%     data(ii).plot_ridgeline()
-%     
-%     geno = strcat(data(ii).driver,"@",data(ii).effector,"@ridge_speed");
-%     fig_name = fullfile(fig_dir,geno);
+%     fh = data(ii).plot_paths(gridsize);
+%     fig_name = fullfile(fig_dir,strcat(data(ii).driver,"@",data(ii).effector,'@path'));
 %     save_figure(gcf,fig_name,save_type);
 %     close
 % end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+%%% Path Figures - Multi-page (all)
+for ii = 1:numel(data)
+    data(ii).plot_paths_full()
+    fig_name = fullfile(fig_dir,strcat(data(ii).driver,"@",data(ii).effector,'@path.pdf'));
+    d = dir('./.temp/*.pdf');
+    input_files = strcat({d.folder},filesep,{d.name});
+    if isfile(fig_name)
+        delete(fig_name);
+    end
+    append_pdfs(fig_name,input_files{:});
+    delete(input_files{:})
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Ridgeline Figures
+
+for ii = 1:numel(data)
+    data(ii).plot_ridgeline()
+    if ~isempty(p.Results.RidgeLimits)
+        xlim([p.Results.RidgeLimits])
+    end
+    geno = strcat(data(ii).driver,"@",data(ii).effector,"@ridge_speed");
+    fig_name = fullfile(fig_dir,geno);
+    save_figure(gcf,fig_name,save_type);
+    close
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+

@@ -12,6 +12,8 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+addpath(genpath('code'))
+
 configfile = 'AZ_config';
 
 params = load_config(configfile);

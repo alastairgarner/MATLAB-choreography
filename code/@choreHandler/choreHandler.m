@@ -163,7 +163,10 @@ classdef choreHandler
 
                 dist_func = @(x,y) sqrt(sum([[0;0],diff([x;y],[],2)].^2));
                 vect_func = @(x,y) sqrt(sum(diff([x([1,end]);y([1,end])],[],2).^2));
-
+                
+                curve_smooth = arrayfun(@(f) movmean(f.curve(f.time_filter),params.smooth_window), temp,'UniformOutput',false);
+                mean_curve_smooth = cellfun(@mean,curve_smooth,'UniformOutput', false);
+                
                 x_crude = arrayfun(@(f) f.x(f.time_filter), temp,'UniformOutput',false);
                 y_crude = arrayfun(@(f) f.y(f.time_filter), temp,'UniformOutput',false);
                 distance_crude = cellfun(dist_func, x_crude, y_crude, 'UniformOutput', false);
@@ -182,6 +185,8 @@ classdef choreHandler
                 startfin = num2cell([mi,ma],2);
 
                 [temp.group] = deal(grp);
+                [temp.curve_smooth] = curve_smooth{:};
+                [temp.mean_curve_smooth] = mean_curve_smooth{:};
                 [temp.x_smooth] = x_smooth{:};
                 [temp.y_smooth] = y_smooth{:};
                 [temp.distance] = distance_smooth{:};
@@ -457,6 +462,127 @@ classdef choreHandler
             xlabel('Distance (mm)')
         end
         
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%
+        function plot_paths_full(obj)
+            temp = obj.data_choreography;
+            if ~any([temp.animal_filter])
+                return
+            end
+
+            if isdir('./.temp')
+                rmdir('./.temp','s')    
+            end
+            mkdir('./.temp')
+            
+            object_num = find([temp.animal_filter]);
+            [~,timestamp_idx,~] = unique({temp.timestamp});
+            maxspeed = 0.4;
+
+            cols = 4;
+            rows = 5;
+
+            gridsize = 8;
+            ylims = [0 rows].*gridsize;
+            xlims = [0 cols].*gridsize;
+            indices = [repmat([1:cols],1,rows);repelem(fliplr([1:rows]),cols)]';
+            centres = [[1:max([cols,rows])].*8];
+            line_xy = centres(indices) - gridsize/2;
+            text_xy = centres(indices) - [gridsize,0];
+
+            fig = figure('Units','inches','Visible','off');
+            set(fig,'Position',[0,0,8.5,11]);
+            ax = axes('Units', 'inches');
+            set(ax,'InnerPosition',[0.25,0.25,8,10])
+
+            cmap = magma;
+            cd = [uint8(viridis(64)*255) uint8(ones(64,1))].';
+
+            n = 1;
+            ix = 1;
+            gridelems = [rows*cols];
+            for ii = 1:ceil(numel(object_num)/gridelems)
+                objects_remain = numel(object_num) - [ii-1]*gridelems;
+                objects_remain = min([objects_remain,gridelems]);
+                hold on
+                for jj = 1:objects_remain
+                    et = temp(ix).elapstime(temp(ix).time_filter);
+                    x = temp(ix).x_smooth;
+                    y = temp(ix).y_smooth;
+                    id = temp(ix).aniID;
+
+                    xy = [x;y]';
+                    xy = xy-mean(xy)+line_xy(n,:);
+
+                    bins = linspace(0,maxspeed,64);
+                    speeds = temp(ix).distance./[0 diff(et)];
+                    Y = discretize(speeds,bins);
+                    Y(isnan(Y)) = 64;
+
+                    p = scatter(xy(:,1),xy(:,2),20,'.');
+                    p.CData = cd(1:3,Y)';
+                    fig_handle(n) = p;
+                    
+                    if ismember(ix,timestamp_idx)
+                       txt = strcat(string(id), ' - ', temp(ix).timestamp);
+                    else
+                        txt = string(id);
+                    end
+                    text(text_xy(n,1),text_xy(n,2),txt,...
+                        'HorizontalAlignment','left',...
+                        'VerticalAlignment','top',...
+                        'Interpreter','none');
+
+                    n = n+1;
+                    ix = ix+1;
+                end
+                %%% Add scale
+                offset = 2;
+                len = 2;
+                line_x = [0,0;0,1]*len + offset;
+                line_y = [0,1;0,0]*len + offset;
+                lab = sprintf('%.0fmm',len);
+                
+                line(line_x',line_y','Color','black', 'LineWidth',2)
+                text(mean(line_x(1,:)),mean(line_y(1,:)),lab,...
+                    'HorizontalAlignment','right',...
+                    'VerticalAlignment', 'middle');
+                text(mean(line_x(2,:)),mean(line_y(2,:)),lab,...
+                    'HorizontalAlignment','center',...
+                    'VerticalAlignment', 'top');
+                hold off
+                
+                %%% Save current figure
+                colormap(viridis)
+                xlim(xlims)
+                ylim(ylims)
+
+                titl = obj.genotype_display;
+                title(titl)
+
+                set(gca,'XTick',[0 xlims(2)],'YTick',[0 ylims(2)]);
+                ax.XAxis.Visible = 'off';
+                ax.YAxis.Visible = 'off';
+
+                filename = ['./.temp/tmp_',sprintf('%04.0f',ii)];
+                print(gcf,filename,'-dpdf','-painters');
+
+                delete(fig_handle)
+                delete(findobj(gcf,'Type','Text'))
+                delete(findobj(gcf,'Type','Line'))
+                n = 1;
+            end
+            delete(ax)
+            
+            c = colorbar;
+            caxis([0 maxspeed]);
+            pbaspect([1,1,1]);
+            filename = ['./.temp/tmp_',sprintf('%04.0f',ii+1)];
+            print(gcf,filename,'-dpdf','-painters');
+            
+            close all
+        end
+        
         %%
         function plot_ridgeline(obj)
             if ~any([obj.data_choreography.animal_filter])
@@ -466,25 +592,31 @@ classdef choreHandler
             filter = find([obj.data_choreography(:).animal_filter]);
             speed = {obj.data_choreography(filter).speed};
             et = {obj.data_choreography(filter).elapstime};
-            filt = {obj.data_choreography(filter).time_filter};
-            speeds = cellfun(@(x,y) x(y),speed,filt,'UniformOutput', false);
-            et = cellfun(@(x,y) x(y),et,filt,'UniformOutput', false);
-
-            speeds_norm = cellfun(@(x) movmean(x,21)./0.25, speeds, 'UniformOutput', false);
-
+            %%% Filter by filter window
+%             filt = {obj.data_choreography(filter).time_filter};
+%             speeds = cellfun(@(x,y) x(y),speed,filt,'UniformOutput', false);
+%             et = cellfun(@(x,y) x(y),et,filt,'UniformOutput', false);
+            %%% Get full time tracked
+            speeds = speed;
+            %%%
+            speeds_norm = cellfun(@(x) movmean(x,21).*5, speeds, 'UniformOutput', false);
+            
             len_obj = length(speeds_norm);
             cmap = flipud(viridis(len_obj));
             hold on
             for jj = 1:len_obj
                 y = (-jj)+[speeds_norm{jj},0,0];
                 x = [et{jj},max(et{jj}),min(et{jj})];
-                patch(x,y,'red','EdgeColor','white','LineWidth',0.1,'FaceColor',cmap(jj,:));
+%                 patch(x,y,'red','EdgeColor','white','LineWidth',0.1,'FaceColor',cmap(jj,:));
+            patch(x,y,'red','EdgeColor','white','LineWidth',0.05,'FaceColor',cmap(jj,:));
+%                 patch(x,y,'red','EdgeColor','none','FaceColor',cmap(jj,:));
             end
             hold off
             set(gcf,'PaperOrientation','landscape');
             pbaspect([3,1,1])
 
             ylim([-len_obj,0]);
+            xlim([0 max(cellfun(@max,et))]);
             set(gca,'YTickLabels',[],'YTick',[]);
         end
         

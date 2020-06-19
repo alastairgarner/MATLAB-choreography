@@ -35,9 +35,9 @@ currentDir = pwd;
 %% list of features
 
 featName = {'x','y','speed','midline','curve','crabspeed',...
-    'area','morpwidth','kink','cast','bias','dir'};
+    'area','morpwidth','kink','cast','bias','dir','spine'};
 featCode = {'x','y','s','m','c','r',...
-    'e','M','k','c','b','d'};
+    'e','M','k','c','b','d','S'};
 
 [C ia ic] = intersect(featName,features,'stable');
 [Lia Locb] = ismember(features,featName);

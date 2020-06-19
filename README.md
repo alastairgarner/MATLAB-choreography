@@ -30,3 +30,29 @@ main_plots
 ```
 
 
+
+## Additional packages (included)
+
+- Colormaps
+- append_pdfs
+- yamlmatlab
+
+
+
+## Changelog
+
+
+
+### 2020-06-15
+
+- Ridgelines now plot the full duration that objects are tracked for, rather than the first 30 seconds (time over which average metrics are calculated)
+- Added 'curve' to the list of Choreography features output (config file)
+- Added 'curve_smooth' parameter (moving mean, window = 21 frames)
+- Added 'average curve' boxplot
+- Changed the 'path' figures to be print all paths across a multi-page pdf, each page displaying 20 objects.
+- Add 'additional_plots.m' - work in progress plots
+  - Curve violins
+  - Curve ridgeline - red highlights > 10 deg
+  - Curve traces - grey lines: all animals, red line: mean trace, red shaded area: standard deviation
+  - Area plots - fluctuation in average object area against time tracked.
+
