@@ -10,7 +10,7 @@ configfile = 'AZ_config';
 params = load_config(configfile);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-varargin = {'FigureType','pdf','PlotOrder','default','FixedDuration', 30, 'RidgeLimits', []};
+varargin = {'FigureType','pdf','PlotOrder','default','FixedDuration', 30, 'RidgeLimits', [],'Buffer',15};
 
 % Parse Function Inputs
 
@@ -35,7 +35,8 @@ addOptional(p,'FilterWindow',defaultFilterWindow,checkFilterWindow);
 addOptional(p,'SmoothWindowWidth',defaultWindow);
 addOptional(p,'FigureType',defaultFigType,checkFigType);
 addOptional(p,'FixedDuration',defaultFixedDuration);
-addOptional(p,'RidgeLimits',[])
+addOptional(p,'RidgeLimits',[]);
+addOptional(p,'Buffer',5);
 
 parse(p,varargin{:})
 
@@ -52,6 +53,7 @@ opt.filter_function = p.Results.FilterFunction;
 opt.tStart = time_window(1);
 opt.tEnd = time_window(2);
 opt.tDur = p.Results.FixedDuration;
+opt.tBuffer = p.Results.Buffer;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Load params, data and filter data
@@ -63,7 +65,7 @@ for ii = 1:numel(data)
     data(ii) = data(ii).load_data_choreography;
 end
 
-data = data.apply_time_filter(opt.tStart,opt.tEnd,opt.tDur);
+data = data.apply_time_filter(opt.tStart,opt.tEnd,opt.tDur,opt.tBuffer);
 data = data.process_choreography(opt);
 
 data = data.format_title();
@@ -329,12 +331,13 @@ for ii = 1:numel(data)
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Area plot - full
 for ii = 1:numel(data)
     temp = data(ii).data_choreography;
     f = [temp.animal_filter];
     
     et = {temp(f).elapstime};
-    et = unique([et{:}]);
+%     et = unique([et{:}]);
     ar = {temp(f).area};
     ar_norm = cellfun(@(x) x./mean(x), ar, 'UniformOutput', false);
     
@@ -344,8 +347,9 @@ for ii = 1:numel(data)
     cellfun(@(y,c) plot(y,'Color',[1 1 1].*c), ar_norm, c)
     hold off
     
+    frameLength = mean(cellfun(@(x) mean(diff(x)), et));
     ticks = get(gca,'XTick');
-    set(gca,'XTickLabel',et(ticks(2:end)));
+    set(gca,'XTickLabel',round(ticks.*frameLength,2));
     
     ylim([0 2])
     pbaspect([2,1,1])
@@ -360,66 +364,164 @@ for ii = 1:numel(data)
     close
 end
 
+%%% Area plot
+for ii = 1:numel(data)
+    temp = data(ii).data_choreography;
+    temp = temp([temp.animal_filter]);
+    f = {temp.time_filter};
+    
+    et = cellfun(@(x,f) x(f), {temp.elapstime}, f, 'UniformOutput', false);
+    ar = {temp.area};
+    ar_norm = cellfun(@(x) x./mean(x), ar, 'UniformOutput', false);
+    c = num2cell([1:numel(ar_norm)]./numel(ar_norm).*0.7);
+    
+    ar_norm = cellfun(@(x,f) x(f), ar_norm, f, 'UniformOutput', false);
+    
+    hold on
+    cellfun(@(y,c) plot(y,'Color',[1 1 1].*c), ar_norm, c)
+%     cellfun(@(x,y,c) plot(x,y,'Color',[1 1 1].*c), et, ar_norm, c)
+    hold off
+    
+    frameLength = mean(cellfun(@(x) mean(diff(x)), et));
+    
+    ticks = get(gca,'XTick');
+    set(gca,'XTickLabel',round(ticks.*frameLength,2));
+    
+    ylim([0 2])
+    pbaspect([2,1,1])
+    
+    ylabel('Normalised Area')
+    xlabel('Time (s)')
+    title(data(ii).genotype_display)
+    
+    geno = strcat("buffer_area@",data(ii).driver,"@",data(ii).effector);
+    fig_name = fullfile(fig_dir,'other',geno);
+    save_figure(gcf,fig_name,save_type);
+    close
+end
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Pause Analyses
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% 
+
+for ii = 1:numel(data)
+    %%% generate distance metric
+    et = {data(ii).data_choreography.elapstime};
+    x = {data(ii).data_choreography.x};
+    y = {data(ii).data_choreography.y};
+    
+    speedPerFrame = cellfun(@(x,y,et) xy_to_speed(x,y,et,[10 10]), x, y, et, 'UniformOutput', false);
+    [data(ii).data_choreography.speedPerFrame] = speedPerFrame{:};
+end
+
+% cmap = flipud(viridis(numel(data)));
 % hold on
 % for ii = 1:numel(data)
 %     temp = data(ii).data_choreography;
+%     temp = temp([temp.animal_filter]);
 %     
-%     j = 4
-%     
-%     et = temp(j).elapstime;
-%     x = temp(j).x;
-%     y = temp(j).y
-%     xDiff = [0 diff(x)];
-%     yDiff = [0 diff(y)];
-%     
-%     dist = temp(j).distance;
-%     
-%     ar = mean(temp(j).area);
-%     r = sqrt(ar/pi);
-%     d = 2*r;
-%     
-%     dist_prev = sqrt(...
-%                     movsum(xDiff,[7 7]).^2 ...
-%                     + movsum(yDiff,[7 7]).^2 ...
-%                     );
-%                 
-% %     dist_prev = sqrt(...
-% %                     movsum(xDiff,[15 1]).^2 ...
-% %                     + movsum(yDiff,[15 1]).^2 ...
-% %                     );
-% %     dist_prev = dist_prev./d
-%     
-%     hold on
-%     plot(et,dist_prev)
-%     plot(et,movmean(dist_prev,21))
-%     hold off
-%     pbaspect([4,1,1])
-%     
-%     
-%     
-%     distByCirc = dist./d
-%     
-%     cumsum(dist)/d
-%     
-%     th = 0:pi/50:2*pi;
-%     xunit = r * cos(th) + x(1);
-%     yunit = r * sin(th) + y(1);
-%     
-%     frame = 21;
-%     
-%     hold on
-%     plot(x,y)
-%     plot(smooth(x,frame,'sgolay',2),smooth(y,frame,'sgolay',2))
-%     plot(xunit, yunit, 'Color', 'red');
-%     hold off
-%     
-%     axis equal
+%     vals = [temp.speedPerFrame];
+%     bins = [0:100] ./ 100 .* 1;
+%     [density, value] = ksdensity(vals,bins, 'bandwidth', []);
+% %     density = density(value >= min(vals) & value <= max(vals));
+% %     value = value(value >= min(vals) & value <= max(vals));
+% %     value(1) = min(vals);
+% %     value(end) = max(vals);
 % 
+%     line(value, density,'Color',cmap(ii,:))
+% end
+% hold off
+% % xlim([0 0.05])
+% pbaspect([4,1,1])
+
+
+n = 10;
+cmap = cbrewer('qual', 'Paired', n);
+cmap = repmat(cmap,2,1);
+
+% cmap = flipud(viridis(numel(data)));
+% cmap(end,:) = [1 0 0]
+LineStyle = '-';
+hold on
+for ii = 1:numel(data)
+    if ii == n+1
+        LineStyle = '--';
+    end
+    temp = data(ii).data_choreography;
+    temp = temp([temp.animal_filter]);
+    
+    vals = [temp.speedPerFrame];
+    
+    threshold = [0:100] ./ 100 .* 0.5
+    value = mean(vals > threshold',2);
+    line(threshold,value,'Color',cmap(ii,:),'LineWidth', 2,'LineStyle', LineStyle)
+end
+hold off
+legend({data.genotype_display},'Location','eastoutside')
+xlim([0,0.3])
+xlabel('Speed (mm/s)')
+ylabel('Proportion of time above threshold')
+pbaspect([1,1,1])
+
+geno = strcat("speed_distribution");
+fig_name = fullfile(fig_dir,'other',geno);
+save_figure(gcf,fig_name,save_type);
+close
+
+%%% Speed below threshold
+
+threshold = 0.01;
+
+n = 10;
+cmap = cbrewer('qual', 'Paired', n);
+cmap = repmat(cmap,2,1);
+
+LineStyle = '-';
+hold on
+for ii = 1:numel(data)
+    temp = data(ii).data_choreography;
+    temp = temp([temp.animal_filter]);
+    
+    et = {temp.elapstime};
+    vals = {temp.speedPerFrame};
+    
+    [tMin, tMax] = cellfun(@(x) bounds(x), et);
+    num = [1:numel(tMin)].*[1 1]';
+    
+    tfDiff = cellfun(@(x) diff([0, x(1:end-1)>=threshold, 0]), vals, 'UniformOutput', false);
+    tfDiff = cellfun(@(x) diff([0, x(1:end-1)<threshold, 0]), vals, 'UniformOutput', false);
+    idx = cellfun(@(x,y) y([find(x>0);find(x<0)]')', tfDiff, et, 'UniformOutput', false);
+    counts = cellfun(@(x) size(x,2), idx);
+    idx = idx(counts ~= 0);
+    y = repelem(1:numel(counts),2,counts);
+    x = [idx{:}];
+    
+    LineWidth = 3;
+    
+    hold on
+    plot([tMin; tMax],num,...
+        'Color',[1 1 1].*0.7,...
+        'LineWidth',LineWidth);
+    
+    plot(x,y,...
+        'Color','red',...
+        'LineWidth',LineWidth);
+    hold off
+    
+    ylim([0 max(num(1,:))+1])
+    pbaspect([1,1,1])
+    set(gca,'YTick',[])
+    xlabel('Time (s)')
+    title(data(ii).genotype_display)
+    
+    geno = strcat("ethogram@",data(ii).driver,"@",data(ii).effector);
+    fig_name = fullfile(fig_dir,'other',geno);
+    save_figure(gcf,fig_name,save_type);
+    close
+end
+
+
+
 

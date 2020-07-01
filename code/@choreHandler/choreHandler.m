@@ -231,7 +231,7 @@ classdef choreHandler
         end
         
         %% Apply Filter (by time)
-        function obj = apply_time_filter(obj,tStart,tEnd,tDur)
+        function obj = apply_time_filter(obj,tStart,tEnd,tDur,tBuffer)
             if isnan(tStart)
                 tStart = floor(min(arrayfun(@(x) min([x.data_choreography(:).elapstime]), obj)));
             end
@@ -250,11 +250,13 @@ classdef choreHandler
                 if isnan(tDur)
                     ani_filt = repelem({true}, numel(et));
                 else
-                    ani_filt = num2cell(durs > tDur);
-                    time_filt = cellfun(@(x,y) y & x <= [min(x(y))+tDur], et, time_filt,...
+                    ani_filt = num2cell(durs > tDur + tBuffer);
+                    time_filt = cellfun(@(x,y) y & x >= [min(x(y))+tBuffer] & x <= [min(x(y))+tDur+tBuffer], et, time_filt,...
                         'UniformOutput', false, 'ErrorHandler', @(x,y,z) repelem(false,1,length(y)));
+%                     time_filt = cellfun(@(x,y) y & x <= [min(x(y))+tDur], et, time_filt,...
+%                         'UniformOutput', false, 'ErrorHandler', @(x,y,z) repelem(false,1,length(y)));
                 end
-                                
+                                                
                 %%%
 %                 filt = cellfun(@(x,y) ~isempty(x(y)), et, time_filt);
 % 
@@ -464,7 +466,7 @@ classdef choreHandler
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%
-        function plot_paths_full(obj)
+        function plot_paths_full(obj,params,FullDuration)
             temp = obj.data_choreography;
             if ~any([temp.animal_filter])
                 return
@@ -506,16 +508,31 @@ classdef choreHandler
                 objects_remain = min([objects_remain,gridelems]);
                 hold on
                 for jj = 1:objects_remain
-                    et = temp(ix).elapstime(temp(ix).time_filter);
-                    x = temp(ix).x_smooth;
-                    y = temp(ix).y_smooth;
-                    id = temp(ix).aniID;
-
+                    ob = object_num(ix);
+                    if ~FullDuration
+                        et = temp(ob).elapstime(temp(ob).time_filter);
+                        x = temp(ob).x_smooth;
+                        y = temp(ob).y_smooth;
+                        speeds = temp(ob).distance./[0 diff(et)];
+                        id = temp(ob).aniID;
+                    else
+                        et = temp(ob).elapstime;
+                        x = movmean(temp(ob).x,params.smooth_window);
+                        y = movmean(temp(ob).y,params.smooth_window);
+                        id = temp(ob).aniID;
+                        dist = sqrt(sum([[0;0],diff([x;y],[],2)].^2));
+                        speeds = dist./[0 diff(et)];
+                    end
+                    etR = [ceil(et(1)*10):floor(et(end)*10)]./10;
+                    x = interp1(et,x,etR);
+                    y = interp1(et,y,etR);
+                    speeds = interp1(et,speeds,etR);
+                    et = etR;
+                    
                     xy = [x;y]';
                     xy = xy-mean(xy)+line_xy(n,:);
 
                     bins = linspace(0,maxspeed,64);
-                    speeds = temp(ix).distance./[0 diff(et)];
                     Y = discretize(speeds,bins);
                     Y(isnan(Y)) = 64;
 
@@ -524,7 +541,7 @@ classdef choreHandler
                     fig_handle(n) = p;
                     
                     if ismember(ix,timestamp_idx)
-                       txt = strcat(string(id), ' - ', temp(ix).timestamp);
+                       txt = strcat(string(id), ' - ', temp(ob).timestamp);
                     else
                         txt = string(id);
                     end
@@ -574,8 +591,9 @@ classdef choreHandler
             end
             delete(ax)
             
-            c = colorbar;
+            c = colorbar();
             caxis([0 maxspeed]);
+            c.Label.String = 'Speed (mm/s)';
             pbaspect([1,1,1]);
             filename = ['./.temp/tmp_',sprintf('%04.0f',ii+1)];
             print(gcf,filename,'-dpdf','-painters');

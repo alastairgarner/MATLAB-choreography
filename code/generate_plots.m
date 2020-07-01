@@ -21,7 +21,7 @@ function generate_plots(params,varargin)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Debug settings
-% varargin = {'FigureType','pdf','PlotOrder','default','FixedDuration', 30, 'RidgeLimits', []};
+% varargin = {'FigureType','pdf','PlotOrder','default','FixedDuration', 30, 'RidgeLimits', [],'Buffer',15};
 
 % Parse Function Inputs
 
@@ -46,7 +46,8 @@ addOptional(p,'FilterWindow',defaultFilterWindow,checkFilterWindow);
 addOptional(p,'SmoothWindowWidth',defaultWindow);
 addOptional(p,'FigureType',defaultFigType,checkFigType);
 addOptional(p,'FixedDuration',defaultFixedDuration);
-addOptional(p,'RidgeLimits',[])
+addOptional(p,'RidgeLimits',[]);
+addOptional(p,'Buffer',5);
 
 parse(p,varargin{:})
 
@@ -63,6 +64,7 @@ opt.filter_function = p.Results.FilterFunction;
 opt.tStart = time_window(1);
 opt.tEnd = time_window(2);
 opt.tDur = p.Results.FixedDuration;
+opt.tBuffer = p.Results.Buffer;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Load params, data and filter data
@@ -74,7 +76,7 @@ for ii = 1:numel(data)
     data(ii) = data(ii).load_data_choreography;
 end
 
-data = data.apply_time_filter(opt.tStart,opt.tEnd,opt.tDur);
+data = data.apply_time_filter(opt.tStart,opt.tEnd,opt.tDur,opt.tBuffer);
 data = data.process_choreography(opt);
 
 data = data.format_title();
@@ -138,13 +140,31 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Path Figures - Multi-page (all)
 for ii = 1:numel(data)
-    data(ii).plot_paths_full()
+    data(ii).plot_paths_full(opt,1)
+    fig_name = fullfile(fig_dir,strcat(data(ii).driver,"@",data(ii).effector,'@full_path.pdf'));
+    d = dir('./.temp/*.pdf');
+    input_files = strcat({d.folder},filesep,{d.name});
+    if isfile(fig_name)
+        delete(fig_name);
+    end
+    % MATLAB's own libraries mess with ghostscript
+    setenv('LD_LIBRARY_PATH','') % clears MATALB-based PATH variables
+    append_pdfs(fig_name,input_files{:});
+    delete(input_files{:})
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Path Figures - Multi-page (all)
+for ii = 1:numel(data)
+    data(ii).plot_paths_full(opt,0)
     fig_name = fullfile(fig_dir,strcat(data(ii).driver,"@",data(ii).effector,'@path.pdf'));
     d = dir('./.temp/*.pdf');
     input_files = strcat({d.folder},filesep,{d.name});
     if isfile(fig_name)
         delete(fig_name);
     end
+    % MATLAB's own libraries mess with ghostscript
+    setenv('LD_LIBRARY_PATH','') % clears MATALB-based PATH variables
     append_pdfs(fig_name,input_files{:});
     delete(input_files{:})
 end
@@ -164,4 +184,5 @@ for ii = 1:numel(data)
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 

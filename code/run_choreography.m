@@ -202,12 +202,15 @@ for ii = 1:length(folderList)
     aniFiles = dir();
     fileNames = {aniFiles.name}';
     fileNames = fileNames(~[aniFiles.isdir]);
-    fileTypes = cellfun(@(x) split(x,'.'), fileNames, 'UniformOutput', false);
-    fileTypes = cellfun(@(x) x{2}, fileTypes, 'Uniformoutput', false);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    fileNamesAdj = regexprep(fileNames,'\d{5}[.]','');
+    fileTypes = regexp(fileNamesAdj,'[.]','split','once');
+    fileTypes = cellfun(@(x) x(2),fileTypes);
+%     fileTypes = cellfun(@(x) x(ismember(x,featName)), fileTypes);
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     [fileTypesU Ua Uc] = unique(fileTypes);
     
     fprintf('\n')
-    
     for jj = 1:length(fileTypesU)
         if length(fileNames) > 2
             
@@ -223,8 +226,8 @@ for ii = 1:length(folderList)
             datCat = cellfun(@(x) [sp{1} ' ' x], datCat, 'UniformOutput', false);
             
             spOut = split(fileNames{Ua(jj)},'.');
-            outName = [spOut{1},'.',spOut{2},'.',spOut{4}];
-            fileID = fopen(outName,'w');
+            outName = strcat(spOut{1},'.',fileTypesU(jj));
+            fileID = fopen(string(outName),'w');
             fprintf(fileID, '%s\n', datCat{:});
             fclose(fileID);
 
