@@ -98,6 +98,7 @@ if length(outFiles) ~= 0
     feats = params.choreography_config.features;
     inpComp = [repelem(inpStamps,numel(feats));repmat(feats,1,numel(inpStamps))]';
     outComp = regexp([outFiles.name],'(\d\d\d\d\d\d\d\d_\d\d\d\d\d\d)[a-zA-Z_0-9@#]*[.](\w+)[.]','tokens');
+    outComp = regexp([outFiles.name],'(\d{8}_\d{6})[a-zA-Z_0-9@#()]*[.](\w+)[.]','tokens');
     outComp = reshape([outComp{:}],2,[])';
 
     f = ~ismember(string(inpComp),string(outComp),'rows');

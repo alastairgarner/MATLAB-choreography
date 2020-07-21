@@ -83,7 +83,7 @@ classdef choreHandler
             obj = vertcat(objects{:});
         end
         
-        %%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function obj = load_data_choreography(obj)
             fprintf('\n')
             delimiter = ' ';
@@ -155,7 +155,7 @@ classdef choreHandler
             obj.data_choreography = data_chore;
         end
         
-        %%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function obj = process_choreography(obj,params)
             for ii = 1:length(obj)
                 grp = obj(ii).group;
@@ -200,10 +200,17 @@ classdef choreHandler
                 path_distance_byarea = num2cell(arrayfun(@(x) choreHandler.get_distance_by_area(x,.5), temp));
                 [temp.path_distance_byarea] = path_distance_byarea{:};
                 
+                et = {temp.elapstime};
+                x = {temp.x};
+                y = {temp.y};
+                speedPerFrame = cellfun(@(x,y,et) obj.xy_to_speed(x,y,et,[10 10]), x, y, et, 'UniformOutput', false);
+                [temp.speedPerFrame] = speedPerFrame{:};
+                
                 obj(ii).data_choreography = temp;
             end
         end
         
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %% Sort By Genotype
         function obj = group_by(obj,group)
             if nargin == 0
@@ -230,6 +237,7 @@ classdef choreHandler
             obj = data_grouped;
         end
         
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %% Apply Filter (by time)
         function obj = apply_time_filter(obj,tStart,tEnd,tDur,tBuffer)
             if isnan(tStart)
@@ -253,20 +261,8 @@ classdef choreHandler
                     ani_filt = num2cell(durs > tDur + tBuffer);
                     time_filt = cellfun(@(x,y) y & x >= [min(x(y))+tBuffer] & x <= [min(x(y))+tDur+tBuffer], et, time_filt,...
                         'UniformOutput', false, 'ErrorHandler', @(x,y,z) repelem(false,1,length(y)));
-%                     time_filt = cellfun(@(x,y) y & x <= [min(x(y))+tDur], et, time_filt,...
-%                         'UniformOutput', false, 'ErrorHandler', @(x,y,z) repelem(false,1,length(y)));
                 end
-                                                
-                %%%
-%                 filt = cellfun(@(x,y) ~isempty(x(y)), et, time_filt);
-% 
-%                 time_filt(filt) = cellfun(@(x,y) y & x <= [min(x(y))+tDur], et(filt), time_filt(filt), 'UniformOutput', false, 'ErrorHandler', @(x,y,z) repelem(false,1,length(y)));
-%                 filt2 = filt;
-% 
-%                 filt2(filt) = cellfun(@(x,y) range(x(y))>(tDur-1), et(filt), time_filt(filt));
-%                 
-%                 ani_filt = num2cell(filt2);
-                %%%
+                
                 [temp(:).animal_filter] = ani_filt{:};
                 [temp(:).time_filter] = time_filt{:};
                 
@@ -274,6 +270,7 @@ classdef choreHandler
             end
         end
         
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%
         function obj = format_title(obj)
             filename = arrayfun(@(x) x.filepaths(1), obj)';
@@ -312,11 +309,13 @@ classdef choreHandler
             [obj.genotype_display] = titlename{:};
         end
         
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %% get full genotype
         function full_genotype = get_full_genotype(obj)
             full_genotype = strcat([obj.driver],'@',[obj.effector]);
         end
 
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %% get full protocol
         function full_protocol = get_full_protocol(obj)
             full_protocol = strcat([obj.protocol1],...
@@ -325,8 +324,9 @@ classdef choreHandler
                 '#',[obj.protocol4]);
         end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% PLOTS
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % PLOTS
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         %% Initialise figure directories
         function figure_dir = init_figure_directory(obj)
@@ -346,6 +346,7 @@ classdef choreHandler
             fclose(fileID);
         end
         
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %% Boxplots
         function [printArray,box_handle,spread_handle] = plot_boxplot(obj,metric_to_plot,y_label,params)
             genos = [obj.genotype_display];
@@ -398,6 +399,7 @@ classdef choreHandler
             spread_handle = p;
         end
         
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%
         function fig_handle = plot_paths(obj, gridsize)
             temp = obj.data_choreography;
@@ -601,6 +603,7 @@ classdef choreHandler
             close all
         end
         
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%
         function plot_ridgeline(obj)
             if ~any([obj.data_choreography.animal_filter])
@@ -638,11 +641,45 @@ classdef choreHandler
             set(gca,'YTickLabels',[],'YTick',[]);
         end
         
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % 
+        function [time,id] = below_threshold(obj,opt,feature)
+            threshold = opt.pause.Threshold;
+            minDuration = opt.pause.MinDuration;
+            minInterval = opt.pause.MinInterval;
+            
+            temp = obj.data_choreography;
+            temp = temp([temp.animal_filter]);
+
+            et = {temp.elapstime};
+            vals = {temp.(feature)};
+
+%             tfDiff = cellfun(@(x) diff([0, x(1:end-1)>=threshold, 0]), vals, 'UniformOutput', false);
+            tfDiff = cellfun(@(x) diff([0, x(1:end-1)<threshold, 0]), vals, 'UniformOutput', false);
+            idx = cellfun(@(x,y) y([find(x>0);find(x<0)]')', tfDiff, et, 'UniformOutput', false);
+            
+            % filter out events that are too short
+            idx = cellfun(@(x) x(:, diff(x) > minDuration), idx, 'UniformOutput', false);
+            idx(cellfun(@isempty, idx)) = deal({[nan;nan]});
+            
+            % merge events that are close together
+%             f = cellfun(@(x) find([x(2,2:end) - x(1,1:end-1)] > minInterval), idx, 'UniformOutput', false);
+            f = cellfun(@(x) [x(2,2:end) - x(1,1:end-1)] > minInterval, idx, 'UniformOutput', false);
+            idx = cellfun(@(x,f) [x(1,[f true]); x(2,[true f])], idx, f, 'UniformOutput', false);
+            
+            counts = cellfun(@(x) size(x,2), idx);
+            idx = idx(counts ~= 0);
+            id = repelem(1:numel(counts),2,counts);
+            time = [idx{:}];
+        end
+        
     end
  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %% METHODS - Static
     methods (Static)
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
         function params = load_parameters(config_file)
             if nargin == 0
                 parameterFile = 'default_config.yaml'; 
@@ -661,6 +698,7 @@ classdef choreHandler
             addpath(params.directories.code)
         end
         
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%
         function file_selection = get_filelist(params)
             files = dir(fullfile(params.directories.choreography_output,'**'));
@@ -678,7 +716,9 @@ classdef choreHandler
             filt = ismember(ic,indx);
             filelist = filelist(filt,:);
             file_selection = files(filt);
-       end
+        end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%
         function [file_struct,index_goodfiles] = get_file_details(filelist)
             filenames = string({filelist.name});
@@ -706,6 +746,7 @@ classdef choreHandler
             end
         end
         
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%
         function [distance_by_area,index] = get_distance_by_area(blob,scaler)
             if ~blob.animal_filter
@@ -740,5 +781,18 @@ classdef choreHandler
             distance_by_area = sum(sqrt(sum(diff([x(idx); y(idx)],[],2).^2)));
         end
         
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % 
+        function distance_per_frame = xy_to_speed(x,y,et,frame)
+
+            xDiff = [0 diff(x)];
+            yDiff = [0 diff(y)];
+            xyDistRaw = sqrt([xDiff.^2]+[yDiff.^2]);
+            xSqDist = movmean(xDiff,frame).^2;
+            ySqDist = movmean(yDiff,frame).^2;
+            xyDist = sqrt(xSqDist + ySqDist);
+            distance_per_frame = movmean(xyDist,21) ./ mean(diff(et));
+
+        end
     end
 end

@@ -10,7 +10,6 @@
 % Website: https://github.com/alastairgarner/
 % August 2019; Last revision: 
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function distance_per_frame = xy_to_speed(x,y,et,frame)
 

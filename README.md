@@ -41,6 +41,14 @@ main_plots
 
 ## Changelog
 
+### 2020-07-21
+
+- Added adjustable options to main_plots.m
+- Added pause analyses
+  - prints pause events to csv
+  - generates pause ethogram
+  - generates pause timeseries, with s.d.
+
 
 
 ### 2020-06-15

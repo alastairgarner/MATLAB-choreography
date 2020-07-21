@@ -3,57 +3,16 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % load parameters
 
-addpath(genpath('code'))
+save_type = opt.general.figureFormat;
+time_window = opt.general.FilterWindow;
+plot_order = opt.box.PlotOrder;
 
-configfile = 'AZ_config';
-
-params = load_config(configfile);
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-varargin = {'FigureType','pdf','PlotOrder','default','FixedDuration', 30, 'RidgeLimits', [],'Buffer',15};
-
-% Parse Function Inputs
-
-defaultWindow = 21;
-defaultFilterFunc = @(Start,End) (Start <= 60 & End >= 120);
-defaultPlotOrder = 'default';
-% defaultConfig = 'default_config';
-defaultFixedDuration = nan;
-
-defaultFigType = 'svg';
-validFigType = {'svg','pdf','fig'};
-checkFigType = @(x) any(validatestring(x,validFigType));
-
-defaultFilterWindow = [nan nan];
-checkFilterWindow = @(x) isnumeric(x) & numel(x)==2;
-
-p = inputParser;
-addOptional(p,'PlotOrder',defaultPlotOrder);
-addOptional(p,'FilterFunction',defaultFilterFunc);
-% addOptional(p,'ConfigFile',defaultConfig);
-addOptional(p,'FilterWindow',defaultFilterWindow,checkFilterWindow);
-addOptional(p,'SmoothWindowWidth',defaultWindow);
-addOptional(p,'FigureType',defaultFigType,checkFigType);
-addOptional(p,'FixedDuration',defaultFixedDuration);
-addOptional(p,'RidgeLimits',[]);
-addOptional(p,'Buffer',5);
-
-parse(p,varargin{:})
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% set local parameters
-
-save_type = p.Results.FigureType;
-time_window = p.Results.FilterWindow;
-plot_order = p.Results.PlotOrder;
-% config_file = p.Results.ConfigFile;
-
-opt.smooth_window = p.Results.SmoothWindowWidth;
-opt.filter_function = p.Results.FilterFunction;
+opt.smooth_window = opt.general.SmoothenWindow;
+opt.filter_function = opt.general.FilterFunc;
 opt.tStart = time_window(1);
 opt.tEnd = time_window(2);
-opt.tDur = p.Results.FixedDuration;
-opt.tBuffer = p.Results.Buffer;
+opt.tDur = opt.general.AverageWindow;
+opt.tBuffer = opt.general.Buffer;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Load params, data and filter data
@@ -405,112 +364,69 @@ end
 % Pause Analyses
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-for ii = 1:numel(data)
-    %%% generate distance metric
-    et = {data(ii).data_choreography.elapstime};
-    x = {data(ii).data_choreography.x};
-    y = {data(ii).data_choreography.y};
-    
-    speedPerFrame = cellfun(@(x,y,et) xy_to_speed(x,y,et,[10 10]), x, y, et, 'UniformOutput', false);
-    [data(ii).data_choreography.speedPerFrame] = speedPerFrame{:};
-end
-
-% cmap = flipud(viridis(numel(data)));
-% hold on
-% for ii = 1:numel(data)
-%     temp = data(ii).data_choreography;
-%     temp = temp([temp.animal_filter]);
-%     
-%     vals = [temp.speedPerFrame];
-%     bins = [0:100] ./ 100 .* 1;
-%     [density, value] = ksdensity(vals,bins, 'bandwidth', []);
-% %     density = density(value >= min(vals) & value <= max(vals));
-% %     value = value(value >= min(vals) & value <= max(vals));
-% %     value(1) = min(vals);
-% %     value(end) = max(vals);
-% 
-%     line(value, density,'Color',cmap(ii,:))
-% end
-% hold off
-% % xlim([0 0.05])
-% pbaspect([4,1,1])
-
-
 n = 10;
 cmap = cbrewer('qual', 'Paired', n);
 cmap = repmat(cmap,2,1);
 
-% cmap = flipud(viridis(numel(data)));
-% cmap(end,:) = [1 0 0]
-LineStyle = '-';
+LineStyles = {'-','--',':'};
 hold on
 for ii = 1:numel(data)
-    if ii == n+1
-        LineStyle = '--';
-    end
+    ixStyle = ceil(ii/n);
+    
     temp = data(ii).data_choreography;
     temp = temp([temp.animal_filter]);
     
     vals = [temp.speedPerFrame];
     
-    threshold = [0:100] ./ 100 .* 0.5
+    threshold = [0:100] ./ 100 .* 0.5;
     value = mean(vals > threshold',2);
-    line(threshold,value,'Color',cmap(ii,:),'LineWidth', 2,'LineStyle', LineStyle)
+    line(threshold,value,'Color',cmap(ii,:),'LineWidth', 2,'LineStyle', LineStyles{ixStyle});
 end
 hold off
+
 legend({data.genotype_display},'Location','eastoutside')
 xlim([0,0.3])
-xlabel('Speed (mm/s)')
+xlabel('Speed threshold (mm/s)')
 ylabel('Proportion of time above threshold')
 pbaspect([1,1,1])
 
 geno = strcat("speed_distribution");
-fig_name = fullfile(fig_dir,'other',geno);
+fig_name = fullfile(fig_dir,geno);
 save_figure(gcf,fig_name,save_type);
 close
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Speed below threshold
 
+lim = vertcat(data.data_choreography);
+lim = ceil(max([lim.elapstime]));
+
+printArray = [];
 threshold = 0.01;
-
-n = 10;
-cmap = cbrewer('qual', 'Paired', n);
-cmap = repmat(cmap,2,1);
-
-LineStyle = '-';
-hold on
 for ii = 1:numel(data)
-    temp = data(ii).data_choreography;
-    temp = temp([temp.animal_filter]);
+    [time,id] = data(ii).below_threshold(0.01,'speedPerFrame');
+    filt = [data(ii).data_choreography.animal_filter];
+    objNumber = [data(ii).data_choreography(filt).aniID];
+    [tMin, tMax] = cellfun(@(x) bounds(x), {data(ii).data_choreography(filt).elapstime});
+    idTot = [1:numel(tMin)] .* [1;1];
     
-    et = {temp.elapstime};
-    vals = {temp.speedPerFrame};
+    printArray = [printArray, [ones(1,numel(id(1,:))).*ii; objNumber(id(1,:)); time] ];
     
-    [tMin, tMax] = cellfun(@(x) bounds(x), et);
-    num = [1:numel(tMin)].*[1 1]';
-    
-    tfDiff = cellfun(@(x) diff([0, x(1:end-1)>=threshold, 0]), vals, 'UniformOutput', false);
-    tfDiff = cellfun(@(x) diff([0, x(1:end-1)<threshold, 0]), vals, 'UniformOutput', false);
-    idx = cellfun(@(x,y) y([find(x>0);find(x<0)]')', tfDiff, et, 'UniformOutput', false);
-    counts = cellfun(@(x) size(x,2), idx);
-    idx = idx(counts ~= 0);
-    y = repelem(1:numel(counts),2,counts);
-    x = [idx{:}];
-    
+    %%% Generate Ethogram
     LineWidth = 3;
     
     hold on
-    plot([tMin; tMax],num,...
+    plot([tMin; tMax],idTot,...
         'Color',[1 1 1].*0.7,...
         'LineWidth',LineWidth);
     
-    plot(x,y,...
+    plot(time,id,...
         'Color','red',...
         'LineWidth',LineWidth);
     hold off
     
-    ylim([0 max(num(1,:))+1])
+    ylim([0 max(idTot(1,:))+1])
+    xlim([0 lim])
     pbaspect([1,1,1])
     set(gca,'YTick',[])
     xlabel('Time (s)')
@@ -520,8 +436,49 @@ for ii = 1:numel(data)
     fig_name = fullfile(fig_dir,'other',geno);
     save_figure(gcf,fig_name,save_type);
     close
+    
+    %%%
+    
+    bins = [1:0.05:max(tMax)];
+        
+    paused = [time(1,:)' < bins] - [time(2,:)' < bins];
+    counts = accumarray(id(1,:)',1);
+    pausedCells = mat2cell(paused,counts,size(paused,2));
+    pausedCells = cellfun(@(x) sum(x,1), pausedCells, 'UniformOutput', false);
+    paused = vertcat(pausedCells{:});
+    
+    value = mean(paused,1);
+    err = std(paused,1);
+    
+    errX = [bins, fliplr(bins)];
+    errY = [value, fliplr(value)] + [err, -fliplr(err)];
+    
+    hold on
+    p = patch(errX,errY, [1 1 1].*0.75,...
+        'EdgeColor', 'none');
+    l = line(bins,value, 'Color','black', 'LineWidth', 2);
+    hold off
+    
+    pbaspect([2,1,1])
+    ylim([0 1])
+    xlim([0 lim])
+    ylabel('Pause proportion')
+    xlabel('Time (s)')
+    title(data(ii).genotype_display)
+    
+    geno = strcat("pause_proportion@",data(ii).driver,"@",data(ii).effector);
+    fig_name = fullfile(fig_dir,'other',geno);
+    save_figure(gcf,fig_name,save_type);
+    close 
 end
 
+locs = find([1 diff(printArray(1,:))]);
+labs = repelem({""}, 1, size(printArray,2));
+labs(locs) = {data.genotype_display};
 
-
+pA = [labs; num2cell(printArray)];
+fid = fopen(fullfile(fig_dir,'pause_proportion.csv'),'w');
+fprintf(fid,'%s,%s,%s,%s,%s\n',string({'genotype','group','id','start','stop'}));
+fprintf(fid,'%s,%d,%d,%f,%f\n',pA{:});
+fclose(fid);
 

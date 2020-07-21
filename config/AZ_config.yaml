@@ -1,5 +1,5 @@
 choreography_config:
-  features: ['speed','area','x','y','curve','spine']
+  features: ['speed','area','x','y','curve']
   pval: 0.0528
   choreLoc: ./packages/choreography/Chore.jar
   M: 0.18
