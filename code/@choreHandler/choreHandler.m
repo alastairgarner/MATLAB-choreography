@@ -1,22 +1,12 @@
 %% choreHandler
 
-% Other m-files required: 
-% Subfunctions: 
-% MAT-files required: 
-% See also:
-
 % Author: Alastair Garner
 % email: alastairgarner@outlook.com
-% Website: https://github.com/alastairgarner/
 % August 2019; Last revision: 
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 classdef choreHandler
-    %UNTITLED Summary of this class goes here
-    %   Detailed explanation goes here
-    %%
     properties
         filepaths = "";
         date = "";

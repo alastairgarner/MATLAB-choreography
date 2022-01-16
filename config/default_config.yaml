@@ -1,5 +1,6 @@
+# Config that Azman used
 choreography_config:
-  features: ['speed','area','x','y','curve']
+  features: ["speed", "area", "x", "y", "curve"]
   pval: 0.0528
   choreLoc: ./packages/choreography/Chore.jar
   M: 0.18
@@ -8,7 +9,7 @@ choreography_config:
   rig: t93
   runQuiet: true
 
-directories: 
+directories:
   master: .
   mwt: ./data/mwt_data
   choreography_output: ./data/chore_output

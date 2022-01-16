@@ -1,15 +1,8 @@
 %% generate_plots.m
 
-% Other m-files required: 
-% Subfunctions: 
-% MAT-files required: 
-% See also:
-
 % Author: Alastair Garner
 % email: alastairgarner@outlook.com
-% Website: https://github.com/alastairgarner/
 % August 2019; Last revision: 
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function generate_plots(params,opt,varargin)
