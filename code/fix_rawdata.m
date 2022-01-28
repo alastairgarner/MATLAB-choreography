@@ -57,4 +57,3 @@ for ii = 1:length(inpFiles)
         fprintf(['copying files for ' sp{end} ' failed \n']);
     end
 end
-
