@@ -6,7 +6,7 @@
 
 function initialise_directories()
 
-addpath('./code')
+addpath(genpath('./code'))
 
 parameterFile = 'default_config.yaml'; 
 paramFile = dir(fullfile('.','**',[parameterFile,'*']));
