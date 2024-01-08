@@ -148,6 +148,11 @@ C:\path\to\file
 
 ## Changelog
 
+### 2022-01-08
+
+- Bug fix: Add `./code` and its subdirectories to the path in `initialise_directories.m`
+- Add cbrewer package to the repo, as it's no longer available on the MATLAB File Exchange
+
 ### 2022-01-28
 
 - Updated README.md
